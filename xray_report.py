@@ -8,12 +8,14 @@ import json
 import datetime
 from openpyxl import Workbook
 
-def authenticate(user, password):
+def authenticate(url, user, password):
 	"""
 		This function takes a user/password combo and attempts to authenticate those credentials and return an auth token
 
 		Parameters
 		==========
+		url: str
+			This is the URL for your JFrog server
 		user: str
 			This is the username
 		password: str
@@ -24,7 +26,6 @@ def authenticate(user, password):
 		Auth token to be appended to future API requests
 	"""
 
-	auth_url = "http://a1vsecxrypl01.q2dc.local/api/v1/auth/token"
 	headers = {'Content-type': 'application/json'}
 	data = {
 		"name": user,
@@ -32,12 +33,12 @@ def authenticate(user, password):
 	}
 	json_data = json.dumps(data)
 
-	res = requests.post(auth_url, headers=headers, data=json_data, verify=False)
+	res = requests.post(url, headers=headers, data=json_data, verify=False)
 	print(res.text)
 	return res.json()
 
 
-def get_violations(authE, watch):
+def get_violations(baseUrl, authE, watch):
 	"""
 		This function returns a json object with the violations matching a particular 'Watch'.  The JFrog API has paginated
 		results so that has to be accounted for.  Also, a separate HTTP request has to be made for each viuolation in order
@@ -45,13 +46,15 @@ def get_violations(authE, watch):
 
 		Parameters
 		==========
+		baseUrl: str
+			Base URL for Jfrog server
 		authE: requests.auth.HTTPBasicAuth object
 			For authentication
 		watch: str
 			String containing the name of the watch you want violations for
 	"""
 
-	violations_url = "http://a1vsecxrypl01.q2dc.local/api/v1/violations"
+	violations_url = f"{baseUrl}/api/v1/violations"
 	headers = {'Content-type': 'application/json'}
 
 	violations_list = []
@@ -169,7 +172,7 @@ def write_report(violation_data, out_file):
 def main():
 	auth_info = HTTPBasicAuth(getuser(), getpass())
 	watch_name = sys.argv[1]
-	v = get_violations(auth_info, watch_name)
+	v = get_violations("http://localhost", auth_info, watch_name)
 	#print(json.dumps(v,sort_keys=False,indent=4, separators=(',', ': ')))
 	# TODO write a report file with the json results
 	out_file = f"{watch_name}-{str(datetime.date.today())}-xray.xlsx"
